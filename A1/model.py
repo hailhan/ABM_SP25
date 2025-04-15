@@ -1,9 +1,8 @@
 from pathlib import Path
-
 import numpy as np
-
 import mesa
 from agents import SugarAgent
+
 ## Using experimental cell space for this model that enforces von Neumann neighborhoods
 from mesa.experimental.cell_space import OrthogonalVonNeumannGrid
 ## Use experimental space feature that allows us to save sugar as a property of the grid spaces
@@ -17,17 +16,17 @@ class SugarScapeModel(mesa.Model):
         n = len(sorted_sugars)
         x = sum(el * (n - ind) for ind, el in enumerate(sorted_sugars)) / (n * sum(sorted_sugars))
         return 1 + (1 / n) - 2 * x
-    def mean_fertility(self):
+    def mean_fertility(self): # debugging
         return np.mean(self.grid.fertility.data) # overall initial fertility is 1 because every square starts at equal fertility level
-    def regrow_sugar(self):
-        # calculate sugar regrow rate based on amount of sugar in cell after eating/planting
-        current_sugar = self.grid.sugar.data
-        mask = (self.grid.fertility.data > 0.7) & (current_sugar < 4)
-        growth = np.zeros_like(current_sugar)
-        growth[mask] = self.grid.fertility.data[mask]
-        self.grid.sugar.data += growth # sugar only regrows where 
-        self.grid.sugar.data = np.minimum(self.grid.sugar.data, self.sugar_distribution)
-    def save_fertility_matrix(self, filename="fertility_matrix.txt"):
+    def regrow(self):
+        mask = (self.grid.sugar.data == 0)
+        regrowth = self.grid.sugar.data[mask] + self.grid.fertility.data[mask]
+        self.grid.sugar.data[mask] = np.minimum(regrowth, 4)
+    def update_fertility(self): # update fertility levels at each step
+        self.grid.fertility.data = 1 - (self.grid.sugar.data 
+                                        / 
+                                        np.max(self.sugar_distribution))
+    def save_fertility_matrix(self, filename="fertility_matrix.txt"): # for debugging
         if hasattr(self.grid, "fertility"):
             np.savetxt(filename, self.grid.fertility.data, fmt="%.3f")
         else:
@@ -45,7 +44,7 @@ class SugarScapeModel(mesa.Model):
         vision_min=1,
         vision_max=5,
         seed = None,
-        ag_enabled=True, 
+        ag_enabled=True,
     ):
         self.ag_enabled = ag_enabled
         super().__init__(seed=seed)
@@ -93,17 +92,24 @@ class SugarScapeModel(mesa.Model):
     ## Define step: Sugar grows back at constant rate of 1, all agents move, then all agents consume, then all see if they die. Then model calculated Gini coefficient.
     def step(self):
         self.agents.shuffle_do("move")
-        self.agents.shuffle_do("gather_and_eat")
+        self.agents.shuffle_do("gather_and_eat") # they eat
         if self.ag_enabled:
             self.agents.shuffle_do("plant_sugar") # plant sugar after eating and before dying
-        self.regrow_sugar()
+            self.regrow()
+            self.update_fertility() # fertility updates
+        else:
+            self.regrow()
+            self.update_fertility()
+            #self.grid.sugar.data = np.minimum(
+            #self.grid.sugar.data + 1, self.sugar_distribution
+            #)
         self.agents.shuffle_do("see_if_die")
         self.datacollector.collect(self)
 
 model = SugarScapeModel()
 
 # Run model for a fixed number of steps (until "convergence" or death of most agents)
-for _ in range(100):  # Or however many steps you want
+for _ in range(30):  # Or however many steps you want
     model.step()
 
 # Save fertility matrix after running

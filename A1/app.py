@@ -27,7 +27,7 @@ sugarscape_space = make_mpl_space_component(
 
 ## Define Gini plot
 GiniPlot = make_plot_component("Gini")
-MeanFertilityPlot = make_plot_component("MeanFertility")
+MeanFertilityPlot = make_plot_component("MeanFertility") # debug
 
 ## Define variable model parameters
 model_params = {
