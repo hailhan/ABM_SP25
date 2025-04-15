@@ -19,6 +19,19 @@ class SugarScapeModel(mesa.Model):
         return 1 + (1 / n) - 2 * x
     def mean_fertility(self):
         return np.mean(self.grid.fertility.data) # overall initial fertility is 1 because every square starts at equal fertility level
+    def regrow_sugar(self):
+        # calculate sugar regrow rate based on amount of sugar in cell after eating/planting
+        current_sugar = self.grid.sugar.data
+        mask = (self.grid.fertility.data > 0.7) & (current_sugar < 4)
+        growth = np.zeros_like(current_sugar)
+        growth[mask] = self.grid.fertility.data[mask]
+        self.grid.sugar.data += growth # sugar only regrows where 
+        self.grid.sugar.data = np.minimum(self.grid.sugar.data, self.sugar_distribution)
+    def save_fertility_matrix(self, filename="fertility_matrix.txt"):
+        if hasattr(self.grid, "fertility"):
+            np.savetxt(filename, self.grid.fertility.data, fmt="%.3f")
+        else:
+            print("Fertility layer not found in the grid.")
     ## Define initiation, inherit seed property from parent class
     def __init__(
         self,
@@ -56,7 +69,7 @@ class SugarScapeModel(mesa.Model):
         self.grid.add_property_layer(
             PropertyLayer.from_data("sugar", self.sugar_distribution)
         )
-        fertility_map = np.ones((self.width, self.height))
+        fertility_map = 1 - (self.sugar_distribution / np.max(self.sugar_distribution))
         self.grid.add_property_layer(
             PropertyLayer.from_data("fertility", fertility_map)
         )
@@ -83,13 +96,15 @@ class SugarScapeModel(mesa.Model):
         self.agents.shuffle_do("gather_and_eat")
         if self.ag_enabled:
             self.agents.shuffle_do("plant_sugar") # plant sugar after eating and before dying
-        # calculate sugar regrow rate based on amount of sugar in cell after eating/planting
-        current_sugar = self.grid.sugar.data
-        global_max_sugar = np.max(self.sugar_distribution)
-        self.grid.fertility.data = 1 - (current_sugar / global_max_sugar) # cell fertility is inversely related to current sugar capacity
-        growth = self.grid.fertility.data
-        self.grid.sugar.data += np.minimum(
-            self.grid.sugar.data + growth, self.sugar_distribution
-            ) # regrowth rate depends on fertility of cell; np.minimum(self.grid.sugar.data + growth, self.sugar_distribution)
+        self.regrow_sugar()
         self.agents.shuffle_do("see_if_die")
         self.datacollector.collect(self)
+
+model = SugarScapeModel()
+
+# Run model for a fixed number of steps (until "convergence" or death of most agents)
+for _ in range(100):  # Or however many steps you want
+    model.step()
+
+# Save fertility matrix after running
+model.save_fertility_matrix("fertility_matrix.txt")

@@ -14,7 +14,7 @@ propertylayer_portrayal = {
               "alpha": 0.8, 
               "colorbar": True, 
               "vmin": 0, 
-              "vmax": 10}, 
+              "vmax": 4}, # changed from 10 to 4
 }
 
 ## Define model space component based on above

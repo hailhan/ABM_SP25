@@ -64,20 +64,20 @@ class SugarAgent(CellAgent):
         self.sugar -= self.metabolism
     ## plant leftover sugar
     def plant_sugar(self):
-       if self.sugar > 0 and self.cell.sugar < 4: # ensure agent has sugar to plant and cell has capacity to hold sugar
-        available_space = 4 - self.cell.sugar
-        planted = min(self.sugar - self.metabolism, available_space) # plant the minimum between the difference 
+       if self.sugar > 0 and self.model.grid.fertility.data[self.cell.coordinate] > 0.7: # ensure agent has sugar to plant and cell has capacity to hold sugar
+        current = self.cell.sugar
+        capacity = 4 - current
+        to_plant = min(self.sugar - self.metabolism, capacity) # plant the minimum between the difference 
         #of the agent's sugar holdings and their metabolism and the max capacity of a cell (- self.metabolism to avoid total extinction)
         #coord = self.cell.coordinate # access actual coordinate of cell
-        self.cell.sugar += planted #model.grid.sugar.data[coord] += planted # plant agent sugar in cell
-        self.sugar -= planted # subtract planted sugar from agent's holdings
+        self.cell.sugar += to_plant #model.grid.sugar.data[coord] += planted # plant agent sugar in cell
+        self.sugar -= to_plant # subtract planted sugar from agent's holdings
     ## If an agent has zero or negative sugar, it dies and is removed from the model
     def see_if_die(self):
         if self.sugar <= 0:
             self.remove()
 
-## add green thumb characteristic to agents
-## add fertility property to soil
+
 ## basically, I want to test whether they always bunch around the piles of densely sugared cells
 ## so i should find a way to incentivize planting in non-sugared areas
 ## have fertility score be inversely related to the sugar level in the previous step
