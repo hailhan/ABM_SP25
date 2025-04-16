@@ -28,15 +28,16 @@ class SugarAgent(CellAgent):
             for cell in self.cell.get_neighborhood(self.vision, include_center=True)
             if cell.is_empty 
         ]
-        #if not possibles: # had to add to handle cases where agents cannot move
-            #return
         ## Determine how much sugar is in each possible movement target
         sugar_values = [
             cell.sugar
             for cell in possibles
         ]
-        ## Calculate the maximum possible sugar value in possible targets
-        max_sugar = max(sugar_values)
+        if sugar_values:
+            ## Calculate the maximum possible sugar value in possible targets
+            max_sugar = max(sugar_values)
+        else:
+            max_sugar = 0
         ## Get indices of cell(s) with maximum sugar potential within range
         candidates_index = [
             i for i in range(len(sugar_values)) if math.isclose(sugar_values[i], max_sugar)
@@ -72,13 +73,13 @@ class SugarAgent(CellAgent):
         if self.sugar - to_plant > 0 and capacity > 0:
             x, y = self.cell.coordinate
             local_fertility = self.model.grid.fertility.data[x, y]
-            if local_fertility == 1.0:
+            if 0.75 < local_fertility <= 1.0:
                 amount = min(to_plant, 4)
-            elif local_fertility == 0.75:
+            elif 0.5 < local_fertility <= 0.75:
                 amount = min(to_plant, 3)
-            elif local_fertility == 0.5:
+            elif 0.25 < local_fertility <= 0.5:
                 amount = min(to_plant, 2)
-            elif local_fertility == 0.25:
+            elif 0 < local_fertility <= 0.25:
                 amount = min(to_plant, 1)
             else:
                 amount = 0

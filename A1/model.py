@@ -19,13 +19,24 @@ class SugarScapeModel(mesa.Model):
     def mean_fertility(self): # debugging
         return np.mean(self.grid.fertility.data) # overall initial fertility is 1 because every square starts at equal fertility level
     def regrow(self):
+        # Assuming a maximum sugar capacity of 4 per cell
+        max_sugar = 4
+        # Identify the cells that are empty or need regrowth.
         mask = (self.grid.sugar.data == 0)
-        regrowth = self.grid.sugar.data[mask] + self.grid.fertility.data[mask]
-        self.grid.sugar.data[mask] = np.minimum(regrowth, 4)
+        # Get the fertility values for those cells.
+        fertility = self.grid.fertility.data[mask]
+        # Create an array for the integer regrowth amount, based on fertility ranges.
+        regrowth_amount = np.zeros_like(fertility, dtype=int)
+        # Use thresholds to determine integer regrowth.
+        regrowth_amount[(fertility > 0.75) & (fertility <= 1.0)] = 4
+        regrowth_amount[(fertility > 0.5) & (fertility <= 0.75)] = 3
+        regrowth_amount[(fertility > 0.25) & (fertility <= 0.5)] = 2
+        regrowth_amount[(fertility > 0) & (fertility <= 0.25)] = 1
+        # Add the integer regrowth amounts to the cells, ensuring the cap of 4 is not exceeded.
+        new_sugar = self.grid.sugar.data[mask] + regrowth_amount
+        self.grid.sugar.data[mask] = np.minimum(new_sugar, max_sugar)
     def update_fertility(self): # update fertility levels at each step
-        self.grid.fertility.data = 1 - (self.grid.sugar.data 
-                                        / 
-                                        np.max(self.sugar_distribution))
+        self.grid.fertility.data = 1 - (self.grid.sugar.data/4)
     def save_fertility_matrix(self, filename="fertility_matrix.txt"): # for debugging
         if hasattr(self.grid, "fertility"):
             np.savetxt(filename, self.grid.fertility.data, fmt="%.3f")
@@ -91,15 +102,12 @@ class SugarScapeModel(mesa.Model):
         self.datacollector.collect(self)
     ## Define step: Sugar grows back at constant rate of 1, all agents move, then all agents consume, then all see if they die. Then model calculated Gini coefficient.
     def step(self):
-        self.agents.shuffle_do("move")
-        self.agents.shuffle_do("gather_and_eat") # they eat
         if self.ag_enabled:
             self.agents.shuffle_do("plant_sugar") # plant sugar after eating and before dying
-            self.regrow()
-            self.update_fertility() # fertility updates
-        else:
-            self.regrow()
-            self.update_fertility()
+        self.agents.shuffle_do("move")
+        self.agents.shuffle_do("gather_and_eat") # they eat
+        self.regrow()
+        self.update_fertility()
             #self.grid.sugar.data = np.minimum(
             #self.grid.sugar.data + 1, self.sugar_distribution
             #)
@@ -109,7 +117,7 @@ class SugarScapeModel(mesa.Model):
 model = SugarScapeModel()
 
 # Run model for a fixed number of steps (until "convergence" or death of most agents)
-for _ in range(30):  # Or however many steps you want
+for _ in range(100):  # Or however many steps you want
     model.step()
 
 # Save fertility matrix after running
