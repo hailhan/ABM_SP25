@@ -65,34 +65,33 @@ class SugarAgent(CellAgent):
         self.sugar -= self.metabolism
     ## plant leftover sugar
     def plant_sugar(self):
-        current = self.cell.sugar
-        #if not (self.sugar > 0 and current < 4): 
-            #return # ensure agent has sugar to plant and cell has capacity to hold sugar
-        capacity = 4 - current # move the sugar cap for all cells to 4
-        to_plant = min(self.sugar, capacity)
-        if self.sugar - to_plant > 0 and capacity > 0:
+        current = self.cell.sugar # get the current amount of sugar in the cell
+        capacity = 4 - current # carrying capacity of ANY cell is 4
+        to_plant = min(self.sugar, capacity) # determine planting amount between the minimum of the agent's sugar holdings and capacity
+        amount = 0
+        if capacity > 0: # if cell has capacity for more sugar # ensure agent won't starve by planting self.sugar - to_plant > 0 and
             x, y = self.cell.coordinate
             local_fertility = self.model.grid.fertility.data[x, y]
-            if 0.75 < local_fertility <= 1.0:
+            # soil fertility determines max amount agent can plant
+            if local_fertility == 1.0:
                 amount = min(to_plant, 4)
-            elif 0.5 < local_fertility <= 0.75:
+            elif local_fertility == 0.75:
                 amount = min(to_plant, 3)
-            elif 0.25 < local_fertility <= 0.5:
+            elif local_fertility == 0.5:
                 amount = min(to_plant, 2)
-            elif 0 < local_fertility <= 0.25:
-                amount = min(to_plant, 1)
-            else:
-                amount = 0
-            self.cell.sugar += amount
-            self.sugar -= amount
-         # plant the minimum between the difference (-self.metabolism)
-            #of the agent's sugar holdings and their metabolism and the max capacity of a cell (- self.metabolism to avoid total extinction)
-            #coord = self.cell.coordinate # access actual coordinate of cell
+            elif local_fertility == 0.25:
+                amount = min(to_plant, 1)   
+            self.cell.sugar += amount # plant amount of sugar
+            self.sugar -= amount # remove planted sugar from agent's holdings
+            x, y = self.cell.coordinate
+            self.model.grid.planted.data[x, y] = True
+
     ## If an agent has zero or negative sugar, it dies and is removed from the model
     def see_if_die(self):
         if self.sugar <= 0:
             self.remove()
 
+### IF PLANTED, I WANT TO RAISE THE MIN SUGAR
 ## basically, I want to test whether they always bunch around the piles of densely sugared cells
 ## so i should find a way to incentivize planting in non-sugared areas
 ## have fertility score be inversely related to the sugar level in the previous step
