@@ -63,46 +63,15 @@ class SugarAgent(CellAgent):
         self.sugar += self.cell.sugar
         self.cell.sugar = 0
         self.sugar -= self.metabolism
-        #x, y = self.cell.coordinate
-        #self.model.grid.eaten.data[x, y] = True
-    ## plant leftover sugar
+    ## agents plant the minimum between their leftover sugar and the capacity of their cell
     def plant_sugar(self):
-        current = self.cell.sugar # get the current amount of sugar in the cell
-        capacity = 4 - current # carrying capacity of ANY cell is 4
-        to_plant = min(self.sugar, capacity) # plant the minimum between agent's sugar holdings and capacity
-        safety = self.sugar - self.metabolism
-        if safety > 0: # protecting the poor
-            to_plant = min(capacity, safety)
-            self.cell.sugar += to_plant
-            self.sugar -= to_plant
-       # amount = 0 
-        #if capacity > 0: # if cell has capacity for more sugar # ensure agent won't starve by planting self.sugar - to_plant > 0 and
-            #x, y = self.cell.coordinate
-            #local_fertility = self.model.grid.fertility.data[x, y]
-            # soil fertility determines max amount agent can plant
-            #if local_fertility == 1.0:
-             #   amount = 4
-            #elif local_fertility == 0.75:
-             #   amount = 3
-            #elif local_fertility == 0.5:
-             #   amount = 2
-            #elif local_fertility == 0.25:
-             #   amount = 1  
-            #self.cell.sugar += min(amount, self.sugar) # plant amount of sugar
-            #self.sugar -= amount # remove planted sugar from agent's holdings
-            #self.model.grid.planted.data[x, y] = True
-
+        to_plant = self.sugar - self.metabolism # planting amount depends on agent sugar holding surplus
+        if to_plant > 0: # protecting the sugar-poor (agents only plant if it won't kill them)
+            self.cell.sugar += to_plant # "plant" the sugar by adding it to the cell's sugar amount...
+            self.sugar -= to_plant # ... and removing it from the agent's sugar holdings
+            x, y = self.cell.coordinate # get cell coordinate so it can be marked as planted
+            self.model.grid.planted.data[x,y] = True # mark cell as planted, has a permanent effect for the rest of the round
     ## If an agent has zero or negative sugar, it dies and is removed from the model
     def see_if_die(self):
         if self.sugar <= 0:
             self.remove()
-
-### IF PLANTED, I WANT TO RAISE THE MIN SUGAR
-## basically, I want to test whether they always bunch around the piles of densely sugared cells
-## so i should find a way to incentivize planting in non-sugared areas
-## have fertility score be inversely related to the sugar level in the previous step
-## mimics over-farming, forces nomadic behavior
-## I anticipate the agents will end up traveling from the northeast and southwest corners to the center and back again as the fertility level fluctuates
-## add variable to turn ag on and off
-## Can a redistribution of resource change the dynamics of cultural development? 
-# Requires: redistribution mechanism (planting), relationship between redistribution and land

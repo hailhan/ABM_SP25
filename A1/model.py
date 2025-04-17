@@ -16,41 +16,32 @@ class SugarScapeModel(mesa.Model):
         n = len(sorted_sugars)
         x = sum(el * (n - ind) for ind, el in enumerate(sorted_sugars)) / (n * sum(sorted_sugars))
         return 1 + (1 / n) - 2 * x
-    def mean_sugar(self):
+    def save_planted_matrix(self, filename="planted_matrix.txt"): # for debugging
+        if hasattr(self.grid, "planted"):
+            np.savetxt(filename, self.grid.planted.data, fmt="%.3f")
+    def mean_sugar(self): # debug more directly than gini
         agent_sugars = [a.sugar for a in self.agents]
         return np.mean(agent_sugars)
-    def mean_metabolism(self):
+    def mean_metabolism(self): # debug
         agent_mets = np.array([a.metabolism for a in self.agents])
         return np.mean(agent_mets)
-    def mean_fertility(self): # debugging
-        return np.mean(self.grid.fertility.data) # overall initial fertility is 1 because every square starts at equal fertility level
-    def regrow(self):
-        # Assuming a maximum sugar capacity of 4 per cell
-        max_sugar = 4
-        #eaten = self.grid.eaten.data
-        #planted = self.grid.planted.data
-        # Identify the cells that are empty or need regrowth.
-        mask = (self.grid.sugar.data == 0) #& (~eaten) #& (~planted)
-        # Get the fertility values for those cells.
-        fertility = self.grid.fertility.data[mask]
-        # Create an array for the integer regrowth amount, based on fertility ranges.
-        regrowth_amount = np.zeros_like(fertility, dtype=int)
-        # Use fertility to determine integer regrowth.
-        regrowth_amount[(fertility <= 1.0)] = 4
-        regrowth_amount[(fertility == 0.75)] = 3
-        regrowth_amount[(fertility == 0.5)] = 2
-        regrowth_amount[(fertility == 0.25)] = 1
-        # Add the integer regrowth amounts to the cells, ensuring the cap of 4 is not exceeded.
-        new_sugar = self.grid.sugar.data[mask] + regrowth_amount
-        self.grid.sugar.data[mask] = np.minimum(new_sugar, max_sugar)
-    def update_fertility(self): # update fertility levels at each step
-        # calculate updated fertility as the inverse of each cell's sugar divided by carrying capacity cap
-        self.grid.fertility.data = 1 - (self.grid.sugar.data/4)
-    def save_fertility_matrix(self, filename="fertility_matrix.txt"): # for debugging
-        if hasattr(self.grid, "fertility"):
-            np.savetxt(filename, self.grid.fertility.data, fmt="%.3f")
-        else:
-            print("Fertility layer not found in the grid.")
+    def regrow(self): # regrowth depends on whether the cell's carrying capacity has been exceeded
+        max_sugar = 4  # assuming a maximum sugar capacity of 4 per cell
+        sugar = self.grid.sugar.data # sugar is an array
+        planted = self.grid.planted.data # planted is an array depending on the planted states flagged in plant function
+        # automatic regrowth for any empty cell
+        empty = (sugar == 0) # boolean mask to ID the cells that are empty or need regrowth.
+        sugar[empty] += 1
+        # planting boosts soil fertility, so anything that was planted below the sugar max in the cell gets an extra sugar
+        bonus = 1
+        plant_cells = planted & (sugar < max_sugar) # boolean mask to identify any cells that were planted and still have room
+        sugar[plant_cells] += bonus
+        # over-farming strips soil of nutrients, so any cell that exceeds 
+        # its carrying capacity loses all sugar
+        over = planted & (sugar > max_sugar) # boolean mask to ID cells that exceeded carrying capacity due to planting
+        sugar[over] = 0 # kill off all remaining sugar as a penalty for over-farming
+        # regrow sugar based on the minimum between these changes and the max capacity of the sugar in each cell
+        self.grid.sugar.data = np.minimum(sugar, max_sugar)
     ## Define initiation, inherit seed property from parent class
     def __init__(
         self,
@@ -65,10 +56,10 @@ class SugarScapeModel(mesa.Model):
         vision_max=5,
         seed = None,
         ag_enabled=True, # add variable to turn ag on/off
-        #first_step=True,
+        #soil_memory=True,
     ):
         self.ag_enabled = ag_enabled
-        #self.first_step = first_step
+        #self.soil_memory = soil_memory
         super().__init__(seed=seed)
         ## Instantiate model parameters
         self.width = width
@@ -82,7 +73,6 @@ class SugarScapeModel(mesa.Model):
         ## Define datacollector, which calculates current Gini coefficient
         self.datacollector = mesa.DataCollector(
             model_reporters = {"Gini": self.calc_gini, 
-                               "MeanFertility": self.mean_fertility,
                                "Metabolism": self.mean_metabolism,
                                "Sugar": self.mean_sugar
                                }
@@ -92,19 +82,10 @@ class SugarScapeModel(mesa.Model):
         self.grid.add_property_layer(
             PropertyLayer.from_data("sugar", self.sugar_distribution)
         )
-        fertility_map = 1 - (self.sugar_distribution / np.max(self.sugar_distribution))
-        #fertility_map = np.zeros_like(self.sugar_distribution)
+        planted_map = np.zeros_like(self.sugar_distribution, dtype=bool)
         self.grid.add_property_layer(
-            PropertyLayer.from_data("fertility", fertility_map),
-        )
-        eaten_map = np.zeros_like(self.sugar_distribution, dtype=bool)
-        self.grid.add_property_layer(
-            PropertyLayer.from_data("eaten", eaten_map)
-        )
-        #planted_map = np.zeros_like(self.sugar_distribution, dtype=bool)
-        #self.grid.add_property_layer(
-           # PropertyLayer.from_data("planted", planted_map)
-            #)
+            PropertyLayer.from_data("planted", planted_map)
+            )
         ## Create agents, give them random properties, and place them randomly on the map
         SugarAgent.create_agents(
             self,
@@ -122,29 +103,17 @@ class SugarScapeModel(mesa.Model):
         )
         ## Initialize datacollector
         self.datacollector.collect(self)
-    ## Define step: Sugar grows back at constant rate of 1, all agents move, then all agents consume, then all see if they die. Then model calculated Gini coefficient.
+    ## Define step in simulation
     def step(self):
-        #if not self.first_step:
-        
-        #self.grid.sugar.data = np.minimum(
-            #self.grid.sugar.data + 1, self.sugar_distribution
-        #)
-        
-        self.agents.shuffle_do("move")
-        self.agents.shuffle_do("gather_and_eat") # they eat, depleting the cell's capacity to zero
+        self.agents.shuffle_do("move") # agents move to cell with max sugar in field of vision
+        self.agents.shuffle_do("gather_and_eat") # agents eat, depleting cell's sugar to zero
         if self.ag_enabled:
-            self.agents.shuffle_do("plant_sugar") # agents plant, amounts according to the cell's fertility at the beginning of the round
-        self.agents.shuffle_do("see_if_die")
-            #self.grid.planted.data[:, :] = False # reset planted state
-        self.regrow()
-        #else:
-           #self.grid.sugar.data = np.minimum(
-            #self.grid.sugar.data + 1, self.sugar_distribution
-        #)
-        self.update_fertility() # new soil fertility stands regardless of ag
-        self.grid.eaten.data[:,:] = False
-        self.datacollector.collect(self)
-        #self.first_step=False
+            self.agents.shuffle_do("plant_sugar") # agents plant if it won't kill them
+        self.agents.shuffle_do("see_if_die") # agents with 0 sugar die
+        self.regrow() # sugar regrows at rates determined in regrow function
+        #if self.soil_memory == False: # determines whether soil is permanently affected by planting
+            #self.grid.planted.data[:, :] = False # reset planted state if soil is resilient
+        self.datacollector.collect(self) # collect round data
 
 #debug
 model = SugarScapeModel()
@@ -154,4 +123,4 @@ for _ in range(200):  # Or however many steps you want
    model.step()
 
 # Save fertility matrix after running
-model.save_fertility_matrix("fertility_matrix.txt")
+model.save_planted_matrix("planted_matrix.txt")

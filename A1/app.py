@@ -14,7 +14,7 @@ propertylayer_portrayal = {
               "alpha": 0.8, 
               "colorbar": True, 
               "vmin": 0, 
-              "vmax": 4}, # changed from 10 to 4
+              "vmax": 4}, # changed from 10 to 4 to better show sugar distribution
 }
 
 ## Define model space component based on above
@@ -27,7 +27,6 @@ sugarscape_space = make_mpl_space_component(
 
 ## Define Gini plot
 GiniPlot = make_plot_component("Gini")
-MeanFertilityPlot = make_plot_component("MeanFertility") # debug
 MeanMetabolismPlot = make_plot_component("Metabolism") # debug
 MeanSugarPlot = make_plot_component("Sugar") # debug
 
@@ -56,7 +55,7 @@ model_params = {
     # Agriculture params
     "ag_enabled": {
         "type":"Checkbox",
-        "value": True,
+        "value": True, # default simulation is with agriculture
         "label": "Enable Agriculture"
     }
 }
@@ -70,7 +69,6 @@ page = SolaraViz(
     components=[
         sugarscape_space,
         GiniPlot,
-        MeanFertilityPlot, # debug
         MeanMetabolismPlot, # debug
         MeanSugarPlot # debug
     ],
