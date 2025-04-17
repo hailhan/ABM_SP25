@@ -63,28 +63,34 @@ class SugarAgent(CellAgent):
         self.sugar += self.cell.sugar
         self.cell.sugar = 0
         self.sugar -= self.metabolism
+        #x, y = self.cell.coordinate
+        #self.model.grid.eaten.data[x, y] = True
     ## plant leftover sugar
     def plant_sugar(self):
         current = self.cell.sugar # get the current amount of sugar in the cell
         capacity = 4 - current # carrying capacity of ANY cell is 4
-        to_plant = min(self.sugar, capacity) # determine planting amount between the minimum of the agent's sugar holdings and capacity
-        amount = 0
-        if capacity > 0: # if cell has capacity for more sugar # ensure agent won't starve by planting self.sugar - to_plant > 0 and
-            x, y = self.cell.coordinate
-            local_fertility = self.model.grid.fertility.data[x, y]
+        to_plant = min(self.sugar, capacity) # plant the minimum between agent's sugar holdings and capacity
+        safety = self.sugar - self.metabolism
+        if safety > 0: # protecting the poor
+            to_plant = min(capacity, safety)
+            self.cell.sugar += to_plant
+            self.sugar -= to_plant
+       # amount = 0 
+        #if capacity > 0: # if cell has capacity for more sugar # ensure agent won't starve by planting self.sugar - to_plant > 0 and
+            #x, y = self.cell.coordinate
+            #local_fertility = self.model.grid.fertility.data[x, y]
             # soil fertility determines max amount agent can plant
-            if local_fertility == 1.0:
-                amount = min(to_plant, 4)
-            elif local_fertility == 0.75:
-                amount = min(to_plant, 3)
-            elif local_fertility == 0.5:
-                amount = min(to_plant, 2)
-            elif local_fertility == 0.25:
-                amount = min(to_plant, 1)   
-            self.cell.sugar += amount # plant amount of sugar
-            self.sugar -= amount # remove planted sugar from agent's holdings
-            x, y = self.cell.coordinate
-            self.model.grid.planted.data[x, y] = True
+            #if local_fertility == 1.0:
+             #   amount = 4
+            #elif local_fertility == 0.75:
+             #   amount = 3
+            #elif local_fertility == 0.5:
+             #   amount = 2
+            #elif local_fertility == 0.25:
+             #   amount = 1  
+            #self.cell.sugar += min(amount, self.sugar) # plant amount of sugar
+            #self.sugar -= amount # remove planted sugar from agent's holdings
+            #self.model.grid.planted.data[x, y] = True
 
     ## If an agent has zero or negative sugar, it dies and is removed from the model
     def see_if_die(self):

@@ -28,6 +28,9 @@ sugarscape_space = make_mpl_space_component(
 ## Define Gini plot
 GiniPlot = make_plot_component("Gini")
 MeanFertilityPlot = make_plot_component("MeanFertility") # debug
+MeanMetabolismPlot = make_plot_component("Metabolism") # debug
+MeanSugarPlot = make_plot_component("Sugar") # debug
+
 
 ## Define variable model parameters
 model_params = {
@@ -67,7 +70,9 @@ page = SolaraViz(
     components=[
         sugarscape_space,
         GiniPlot,
-        MeanFertilityPlot,
+        MeanFertilityPlot, # debug
+        MeanMetabolismPlot, # debug
+        MeanSugarPlot # debug
     ],
     model_params=model_params,
     name="Sugarscape",

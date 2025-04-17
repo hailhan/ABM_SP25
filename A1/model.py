@@ -16,23 +16,27 @@ class SugarScapeModel(mesa.Model):
         n = len(sorted_sugars)
         x = sum(el * (n - ind) for ind, el in enumerate(sorted_sugars)) / (n * sum(sorted_sugars))
         return 1 + (1 / n) - 2 * x
-    def mean_sugar(self): # debug
-        agent_sugars = np.array([a.sugar for a in self.agents])
+    def mean_sugar(self):
+        agent_sugars = [a.sugar for a in self.agents]
         return np.mean(agent_sugars)
+    def mean_metabolism(self):
+        agent_mets = np.array([a.metabolism for a in self.agents])
+        return np.mean(agent_mets)
     def mean_fertility(self): # debugging
         return np.mean(self.grid.fertility.data) # overall initial fertility is 1 because every square starts at equal fertility level
     def regrow(self):
         # Assuming a maximum sugar capacity of 4 per cell
         max_sugar = 4
-        planted = self.grid.planted.data
+        #eaten = self.grid.eaten.data
+        #planted = self.grid.planted.data
         # Identify the cells that are empty or need regrowth.
-        mask = (self.grid.sugar.data == 0) #& (~planted)
+        mask = (self.grid.sugar.data == 0) #& (~eaten) #& (~planted)
         # Get the fertility values for those cells.
         fertility = self.grid.fertility.data[mask]
         # Create an array for the integer regrowth amount, based on fertility ranges.
         regrowth_amount = np.zeros_like(fertility, dtype=int)
         # Use fertility to determine integer regrowth.
-        regrowth_amount[(fertility == 1.0)] = 4
+        regrowth_amount[(fertility <= 1.0)] = 4
         regrowth_amount[(fertility == 0.75)] = 3
         regrowth_amount[(fertility == 0.5)] = 2
         regrowth_amount[(fertility == 0.25)] = 1
@@ -61,10 +65,10 @@ class SugarScapeModel(mesa.Model):
         vision_max=5,
         seed = None,
         ag_enabled=True, # add variable to turn ag on/off
-        first_step=True,
+        #first_step=True,
     ):
         self.ag_enabled = ag_enabled
-        self.first_step = first_step
+        #self.first_step = first_step
         super().__init__(seed=seed)
         ## Instantiate model parameters
         self.width = width
@@ -79,7 +83,8 @@ class SugarScapeModel(mesa.Model):
         self.datacollector = mesa.DataCollector(
             model_reporters = {"Gini": self.calc_gini, 
                                "MeanFertility": self.mean_fertility,
-                               "SugarHoldings": self.mean_sugar
+                               "Metabolism": self.mean_metabolism,
+                               "Sugar": self.mean_sugar
                                }
         )
         ## Import sugar distribution from raster, define grid property
@@ -92,10 +97,14 @@ class SugarScapeModel(mesa.Model):
         self.grid.add_property_layer(
             PropertyLayer.from_data("fertility", fertility_map),
         )
-        planted_map = np.zeros_like(self.sugar_distribution, dtype=bool)
+        eaten_map = np.zeros_like(self.sugar_distribution, dtype=bool)
         self.grid.add_property_layer(
-            PropertyLayer.from_data("planted", planted_map)
-            )
+            PropertyLayer.from_data("eaten", eaten_map)
+        )
+        #planted_map = np.zeros_like(self.sugar_distribution, dtype=bool)
+        #self.grid.add_property_layer(
+           # PropertyLayer.from_data("planted", planted_map)
+            #)
         ## Create agents, give them random properties, and place them randomly on the map
         SugarAgent.create_agents(
             self,
@@ -115,8 +124,8 @@ class SugarScapeModel(mesa.Model):
         self.datacollector.collect(self)
     ## Define step: Sugar grows back at constant rate of 1, all agents move, then all agents consume, then all see if they die. Then model calculated Gini coefficient.
     def step(self):
-        if not self.first_step:
-            self.regrow()
+        #if not self.first_step:
+        
         #self.grid.sugar.data = np.minimum(
             #self.grid.sugar.data + 1, self.sugar_distribution
         #)
@@ -126,10 +135,16 @@ class SugarScapeModel(mesa.Model):
         if self.ag_enabled:
             self.agents.shuffle_do("plant_sugar") # agents plant, amounts according to the cell's fertility at the beginning of the round
         self.agents.shuffle_do("see_if_die")
-        self.grid.planted.data[:, :] = False # reset planted state
+            #self.grid.planted.data[:, :] = False # reset planted state
+        self.regrow()
+        #else:
+           #self.grid.sugar.data = np.minimum(
+            #self.grid.sugar.data + 1, self.sugar_distribution
+        #)
         self.update_fertility() # new soil fertility stands regardless of ag
-        self.datacollector.collect(self) 
-        self.first_step=False
+        self.grid.eaten.data[:,:] = False
+        self.datacollector.collect(self)
+        #self.first_step=False
 
 #debug
 model = SugarScapeModel()
