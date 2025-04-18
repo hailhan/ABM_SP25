@@ -1,3 +1,5 @@
+## MY CHANGES ARE IN LINES 19, 32-34, 58-62, 75-77
+
 from model import SugarScapeModel
 from mesa.visualization import Slider, SolaraViz, make_plot_component
 from mesa.visualization.components.matplotlib_components import make_mpl_space_component
@@ -27,8 +29,9 @@ sugarscape_space = make_mpl_space_component(
 
 ## Define Gini plot
 GiniPlot = make_plot_component("Gini")
-MeanMetabolismPlot = make_plot_component("Metabolism") # debug
-MeanSugarPlot = make_plot_component("Sugar") # debug
+MeanMetabolismPlot = make_plot_component("Metabolism") # added to show stability across ag runs
+MeanSugarPlot = make_plot_component("Sugar") # added to show stability across ag runs
+AgentCountPlot = make_plot_component("NumAgents") # added to show extent of die-off in ag runs
 
 
 ## Define variable model parameters
@@ -69,8 +72,9 @@ page = SolaraViz(
     components=[
         sugarscape_space,
         GiniPlot,
-        MeanMetabolismPlot, # debug
-        MeanSugarPlot # debug
+        MeanMetabolismPlot, # added
+        MeanSugarPlot, # added
+        AgentCountPlot # added
     ],
     model_params=model_params,
     name="Sugarscape",

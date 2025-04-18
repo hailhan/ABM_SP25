@@ -1,3 +1,4 @@
+## MY CHANGES ARE IN LINES 69-76 ##
 import math
 
 ## Using experimental agent type with native "cell" property that saves its current position in cellular grid
@@ -47,8 +48,6 @@ class SugarAgent(CellAgent):
             possibles[i]
             for i in candidates_index
         ]
-        if not candidates: # added
-            return
         ## Find the closest cells with maximum possible sugar
         min_dist = min(get_distance(self.cell, cell) for cell in candidates)
         final_candidates = [
@@ -63,14 +62,14 @@ class SugarAgent(CellAgent):
         self.sugar += self.cell.sugar
         self.cell.sugar = 0
         self.sugar -= self.metabolism
-    ## agents plant the minimum between their leftover sugar and the capacity of their cell
+    ## agents with a surplus of sugar plant it in the cell they occupy
     def plant_sugar(self):
-        to_plant = self.sugar - self.metabolism # planting amount depends on agent sugar holding surplus
+        to_plant = self.sugar - self.metabolism # surplus is more sugar than agent needs to survive
         if to_plant > 0: # protecting the sugar-poor (agents only plant if it won't kill them)
-            self.cell.sugar += to_plant # "plant" the sugar by adding it to the cell's sugar amount...
-            self.sugar -= to_plant # ... and removing it from the agent's sugar holdings
+            self.cell.sugar += to_plant # "plant" sugar by adding it to the cell's sugar amount...
+            self.sugar -= to_plant # ... and removing it from agent's sugar holdings
             x, y = self.cell.coordinate # get cell coordinate so it can be marked as planted
-            self.model.grid.planted.data[x,y] = True # mark cell as planted, has a permanent effect for the rest of the round
+            self.model.grid.planted.data[x,y] = True # mark cell as planted; permanent effect for rest of simulation
     ## If an agent has zero or negative sugar, it dies and is removed from the model
     def see_if_die(self):
         if self.sugar <= 0:
