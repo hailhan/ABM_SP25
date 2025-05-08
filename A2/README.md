@@ -8,3 +8,6 @@ Contains all code relevant to the agents.
 
 ##### model.py
 Contains all code relevant to the model.
+
+##### app.py
+Contains all code relevant to the GUI.
