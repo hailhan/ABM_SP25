@@ -10,6 +10,7 @@ class CommunityModel(Model):
                  citizen_density = 1, authority_density = 0.25, 
                  leader_density = 0.25, seed=None, authority = False):
         super().__init__(seed=seed)
+        self._next_id=0 # add underscore to differentiate from mesa method
         self.width = width
         self.height = height
         self.citizen_density = citizen_density # all density features will be modifiable by user
@@ -39,7 +40,9 @@ class CommunityModel(Model):
             unique_id = self.next_id()
             authority = Authority(self, unique_id=unique_id)
             self.grid.place_agent(authority, pos)
-
+    def next_id(self):
+        self._next_id += 1
+        return self._next_id
     # run a step of the model        
     def step(self):
         self.agents.shuffle_do("behave") # authorities are handled in behave function

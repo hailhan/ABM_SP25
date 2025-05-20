@@ -8,6 +8,8 @@ class Authority(Agent): # define authority class
         super().__init__(model)
         self.reliability = model.random.uniform(-1, 1)
         self.unique_id = unique_id
+    def behave(self):
+        pass
 
 class Citizen(Agent): # define citizen class
     def __init__(self, model, unique_id, 
@@ -39,7 +41,7 @@ class Citizen(Agent): # define citizen class
         if authorities:
             authority = self.model.random.choice(authorities) # choose authority
             self.knowledge += authority.reliability * 0.1
-            self.interlocutors[authority.unique_id] # add authority to memory
+            self.interlocutors[authority.unique_id] = self.interlocutors.get(authority.unique_id, 0) + 1 # add authority to memory
         
         # handles peer interactions
         elif peers:
@@ -60,8 +62,11 @@ class Citizen(Agent): # define citizen class
         net_hb = max(self.severity, self.susceptibility) - max(self.barriers, self.benefits)
 
         # calculate peer pressure cue to action based on neighbor behaviors
-        behaved = [n for n in neighbors if n.behavior == True]
-        ill_behaved = [n for n in neighbors if n.behavior == False]
+        peers = [n for n in neighbors if isinstance(n, Citizen)] 
+
+        behaved = [n for n in peers if n.behavior == True]
+        ill_behaved = [n for n in peers if n.behavior == False]
+
         if len(ill_behaved) > 0: # avoid div by zero error
             peer_pressure = len(behaved) / len(ill_behaved)
         else:

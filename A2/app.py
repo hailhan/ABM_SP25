@@ -1,5 +1,5 @@
-# don't even bother looking at this one yet
 import solara
+from agents import Citizen, Authority
 from model import CommunityModel
 from mesa.visualization import (  
     SolaraViz,
@@ -8,18 +8,29 @@ from mesa.visualization import (
 )
 from mesa.visualization.components.matplotlib_components import make_mpl_space_component
 
-def citizen_portrayal(Citizen):
-    return {'marker': 'o',
-            'color': 'blue' if Citizen.behavior == 1 else 'red',
-            'size': 20}
-
-def authority_portrayal(Authority):
-    return {'marker': 's',
+def agent_portrayal(agent):
+    # combined functions to pass into community_space
+    if isinstance(agent, Citizen):
+        return {
+            'marker': 'o',
+            'color': 'blue' if agent.behavior == 1 else 'red',
+            'size': 20
+        }
+    elif isinstance(agent, Authority):
+        return {
+            'marker': 's',
             'color': 'black',
-            'size': 10}
+            'size': 10
+        }
+    else:
+        return {
+            'marker': 'x',
+            'color': 'gray',
+            'size': 5
+        }
 
 community_space = make_mpl_space_component(
-    agent_portrayal=[citizen_portrayal, authority_portrayal],
+    agent_portrayal=agent_portrayal, # single function instead of list of functions
     post_process=None,
     draw_grid=False,
 )
