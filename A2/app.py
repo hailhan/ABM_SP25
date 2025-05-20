@@ -3,7 +3,8 @@ from agents import Citizen, Authority
 from model import CommunityModel
 from mesa.visualization import (  
     SolaraViz,
-    make_plot_component
+    make_plot_component,
+    Slider
 )
 from mesa.visualization.components.matplotlib_components import make_mpl_space_component
 
@@ -37,6 +38,7 @@ community_space = make_mpl_space_component(
 # define model reporter plots
 KnowledgePlot = make_plot_component("Mean Knowledge")
 BehaviorPlot = make_plot_component("Mean Behavior")
+NetHBPlot = make_plot_component("Net Health Belief")
 
 model_params = {
     "seed": {
@@ -50,19 +52,19 @@ model_params = {
         "type":"Checkbox",
         "value": False,
         "label": "Enable Authorities"
+    },
+    "authority_density": Slider("Authority Density", value=0.25, min=0, max=1, step=0.05)
     }
-}
 
-##Instantiate model
-#model = CommunityModel()
 
 ## Define all aspects of page
 page = SolaraViz(
-    CommunityModel(),
-    components=[
+    CommunityModel(), # instantiate model
+    components=[ # include components to visualize
         community_space,
         KnowledgePlot,
-        BehaviorPlot
+        BehaviorPlot,
+        NetHBPlot
     ],
     model_params=model_params,
     name="Community",
