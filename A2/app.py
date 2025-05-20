@@ -3,7 +3,7 @@ from agents import Citizen, Authority
 from model import CommunityModel
 from mesa.visualization import (  
     SolaraViz,
-    make_space_component
+    make_plot_component
 )
 from mesa.visualization.components.matplotlib_components import make_mpl_space_component
 
@@ -12,7 +12,7 @@ def agent_portrayal(agent):
     if isinstance(agent, Citizen):
         return {
             'marker': 'o',
-            'color': 'blue' if agent.behavior == 1 else 'red',
+            'color': 'blue' if agent.behavior == True else 'red',
             'size': 20
         }
     elif isinstance(agent, Authority):
@@ -33,6 +33,10 @@ community_space = make_mpl_space_component(
     post_process=None,
     draw_grid=False,
 )
+
+# define model reporter plots
+KnowledgePlot = make_plot_component("Mean Knowledge")
+BehaviorPlot = make_plot_component("Mean Behavior")
 
 model_params = {
     "seed": {
@@ -57,6 +61,8 @@ page = SolaraViz(
     CommunityModel(),
     components=[
         community_space,
+        KnowledgePlot,
+        BehaviorPlot
     ],
     model_params=model_params,
     name="Community",
