@@ -8,7 +8,8 @@ from agents import Citizen, Authority
 class CommunityModel(Model):
     def __init__(self, width = 50, height=50, 
                  citizen_density = 1, authority_density = 0.25, 
-                 leader_density = 0.25, seed=None, authority = False):
+                 leader_density = 0.25, seed=None, authority=False,
+                 initial_population = None):
         super().__init__(seed=seed)
         self._next_id=0 # add underscore to differentiate from mesa method
         self.width = width
@@ -16,8 +17,11 @@ class CommunityModel(Model):
         self.citizen_density = citizen_density # all density features will be modifiable by user
         self.authority_density = authority_density
         self.leader_density = leader_density
-        self.authority = False # default no authorities in model
-        
+        self.authority = authority # default no authorities in model
+        if initial_population is not None:
+            total_cells = width * height
+            self.citizen_density = initial_population / total_cells
+
         #instantiate grid
         self.grid = MultiGrid(width, height, torus=False) # multigrid so auth and cit can occupy same space
 
@@ -32,14 +36,15 @@ class CommunityModel(Model):
                 self.grid.place_agent(citizen, pos)
 
         # calculate number of authorities based on density
-        num_authorities = int(self.authority_density * self.grid.width * self.grid.height)
-        all_pos = [(x,y) for x in range(self.grid.width) for y in range(self.grid.height)]
-        self.random.shuffle(all_pos)
-        # place authorities randomly
-        for pos in all_pos[:num_authorities]:
-            unique_id = self.next_id()
-            authority = Authority(self, unique_id=unique_id)
-            self.grid.place_agent(authority, pos)
+        if self.authority:
+            num_authorities = int(self.authority_density * self.grid.width * self.grid.height)
+            all_pos = [(x,y) for x in range(self.grid.width) for y in range(self.grid.height)]
+            self.random.shuffle(all_pos)
+            # place authorities randomly
+            for pos in all_pos[:num_authorities]:
+                unique_id = self.next_id()
+                authority = Authority(self, unique_id=unique_id)
+                self.grid.place_agent(authority, pos)
     def next_id(self):
         self._next_id += 1
         return self._next_id

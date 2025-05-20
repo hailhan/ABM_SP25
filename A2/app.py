@@ -3,8 +3,7 @@ from agents import Citizen, Authority
 from model import CommunityModel
 from mesa.visualization import (  
     SolaraViz,
-    make_space_component,
-    Slider
+    make_space_component
 )
 from mesa.visualization.components.matplotlib_components import make_mpl_space_component
 
@@ -19,7 +18,7 @@ def agent_portrayal(agent):
     elif isinstance(agent, Authority):
         return {
             'marker': 's',
-            'color': 'black',
+            'color': 'white',
             'size': 10
         }
     else:
@@ -39,21 +38,23 @@ model_params = {
     "seed": {
         "type": "InputText",
         "value": 0,
-        "label": "Random Seed",
+        "label": "Random Seed"
     },
     "width": 50,
     "height": 50,
-    "initial_population": Slider(
-        "Initial Population", value=2500, min=100, max=2500, step=100
-    ),
+    "authority": {
+        "type":"Checkbox",
+        "value": False,
+        "label": "Enable Authorities"
+    }
 }
 
 ##Instantiate model
-model = CommunityModel()
+#model = CommunityModel()
 
 ## Define all aspects of page
 page = SolaraViz(
-    model,
+    CommunityModel(),
     components=[
         community_space,
     ],
