@@ -1,12 +1,12 @@
 import solara
 from agents import Citizen, Authority
 from model import CommunityModel
+from mesa.visualization.components.matplotlib_components import make_mpl_space_component
 from mesa.visualization import (  
     SolaraViz,
     make_plot_component,
     Slider
-)
-from mesa.visualization.components.matplotlib_components import make_mpl_space_component
+    )
 
 def agent_portrayal(agent):
     # combined functions to pass into community_space
@@ -20,7 +20,7 @@ def agent_portrayal(agent):
         return {
             'marker': 's',
             'color': 'white',
-            'size': 10
+            'size': 5
         }
     else:
         return {
@@ -48,12 +48,7 @@ model_params = {
     },
     "width": 50,
     "height": 50,
-    "authority": {
-        "type":"Checkbox",
-        "value": False,
-        "label": "Enable Authorities"
-    },
-    "authority_density": Slider("Authority Density", value=0.25, min=0, max=1, step=0.05)
+    "authority_density": Slider("Authority Density", value=0, min=0, max=1, step=0.05)
     }
 
 

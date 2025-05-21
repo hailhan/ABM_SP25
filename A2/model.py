@@ -22,16 +22,17 @@ class CommunityModel(Model):
             for c in citizens
             ])
     
-    def __init__(self, width = 50, height=50, 
-                 authority_density = 0.25,
-                 seed=None, authority=False,
+    def __init__(self, width = 50, height=50,
+                 #authority=False, 
+                 authority_density = 0,
+                 seed=0
                  ):
         super().__init__(seed=seed)
         self._next_id=0 # add underscore to differentiate from mesa method
         self.width = width
         self.height = height
+        #self.authority = authority # default no authorities in model
         self.authority_density = authority_density
-        self.authority = authority # default no authorities in model
     
         #instantiate grid
         self.grid = MultiGrid(width, height, torus=False) # multigrid so auth and cit can occupy same space
@@ -45,7 +46,7 @@ class CommunityModel(Model):
                 self.grid.place_agent(citizen, pos)
 
         # calculate number of authorities based on density
-        if self.authority:
+        if self.authority_density > 0:
             num_authorities = int(self.authority_density * self.grid.width * self.grid.height)
             all_pos = [(x,y) for x in range(self.grid.width) for y in range(self.grid.height)]
             self.random.shuffle(all_pos)

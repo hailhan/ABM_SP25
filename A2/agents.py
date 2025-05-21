@@ -38,7 +38,7 @@ class Citizen(Agent): # define citizen class
         self.cached_neighbors = None
     
     def find_neighbors(self):
-        if not self.model.authority:
+        if not self.model.authority_density > 0:
             # Oonly compute once if authorities are not enabled
             if self.cached_neighbors is None:
                 neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False)
