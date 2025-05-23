@@ -22,17 +22,18 @@ class CommunityModel(Model):
             for c in citizens
             ])
     
-    def __init__(self, width = 50, height=50,
-                 #authority=False, 
-                 authority_density = 0,
+    def __init__(self, width=50, height=50,
+                 authority_density=0,
+                 reliability_min=-1,
+                 reliability_max=1,
                  seed=0
                  ):
         super().__init__(seed=seed)
         self._next_id=0 # add underscore to differentiate from mesa method
         self.width = width
         self.height = height
-        #self.authority = authority # default no authorities in model
         self.authority_density = authority_density
+        self.reliability_range = (reliability_min, reliability_max)
     
         #instantiate grid
         self.grid = MultiGrid(width, height, torus=False) # multigrid so auth and cit can occupy same space

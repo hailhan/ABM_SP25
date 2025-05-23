@@ -1,6 +1,8 @@
 import solara
+from solara import Checkbox
 from agents import Citizen, Authority
 from model import CommunityModel
+from types import SimpleNamespace
 from mesa.visualization.components.matplotlib_components import make_mpl_space_component
 from mesa.visualization import (  
     SolaraViz,
@@ -48,7 +50,9 @@ model_params = {
     },
     "width": 50,
     "height": 50,
-    "authority_density": Slider("Authority Density", value=0, min=0, max=1, step=0.05)
+    "authority_density": Slider("Authority Density", value=0, min=0, max=1, step=0.05),
+    "reliability_min": Slider("Reliability Min", value=-1, min=-1, max=0, step=0.5),
+    "reliability_max": Slider("Reliability Max", value=1, min=0, max=1, step=0.5),
     }
 
 

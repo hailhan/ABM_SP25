@@ -5,6 +5,8 @@ class Authority(Agent): # define authority class
         super().__init__(model)
         self.reliability = model.random.uniform(-1, 1)
         self.unique_id = unique_id
+        low, high = model.reliability_range
+        self.reliability = model.random.uniform(low, high)
 
     def move(self):
         # authority will randomly move to any spot in its moore neighborhood
@@ -16,7 +18,8 @@ class Authority(Agent): # define authority class
         self.model.random.shuffle(possible_steps)
         for step in possible_steps:
             if all( # authority can move to any cell that isn't already occupied by an authority
-                not isinstance(a, Authority) for a in self.model.grid.get_cell_list_contents(step)
+                not isinstance(a, Authority) 
+                for a in self.model.grid.get_cell_list_contents(step)
             ):
                 self.model.grid.move_agent(self, step)
                 break
@@ -29,7 +32,7 @@ class Citizen(Agent): # define citizen class
         super().__init__(model)
         self.unique_id = unique_id # give each agent an id so they can be identified in memory feature
         self.susceptibility = model.random.uniform(-1, 1) # assign random float from -1 to 1 for all health-belief features
-        self.severity = model.random.uniform(-1, 1)
+        self.severity = model.random.uniform(-1, 1) # ask david about this tomorrow
         self.benefits = model.random.uniform(-1, 1)
         self.barriers = model.random.uniform(-1, 1)
         self.knowledge = model.random.uniform(-1, 1) # all agents start with some level of prior knowledge
@@ -38,8 +41,8 @@ class Citizen(Agent): # define citizen class
         self.cached_neighbors = None
     
     def find_neighbors(self):
-        if not self.model.authority_density > 0:
-            # Oonly compute once if authorities are not enabled
+        if self.model.authority_density == 0:
+            # only compute once if authorities are not enabled
             if self.cached_neighbors is None:
                 neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False)
                 self.cached_neighbors = neighbors
@@ -56,7 +59,7 @@ class Citizen(Agent): # define citizen class
     
     def adjust_knowledge(self, authorities, peers):
         # handles authority variable implicitly 
-        if authorities:
+        if len(authorities) > 0:
             authority = self.model.random.choice(authorities) # choose authority
             self.memory[authority.unique_id] = self.memory.get(authority.unique_id, 0) + 1 # add authority to memory
             familiarity = self.memory[authority.unique_id]
