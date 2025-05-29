@@ -31,18 +31,18 @@ class Citizen(Agent): # define citizen class
     def __init__(self, model, unique_id):
         super().__init__(model)
         self.unique_id = unique_id # give each agent an id so they can be identified in memory feature
-        self.susceptibility = model.random.uniform(-1, 1) # assign random float from -1 to 1 for all health-belief features
-        self.severity = model.random.uniform(-1, 1) # ask david about this tomorrow
+        self.susceptibility = model.random.uniform(-1, 1) # assign random float from -1 to 1 for all HB features
+        self.severity = model.random.uniform(-1, 1)
         self.benefits = model.random.uniform(-1, 1)
         self.barriers = model.random.uniform(-1, 1)
         self.knowledge = model.random.uniform(-1, 1) # all agents start with some level of prior knowledge
         self.behavior = self.knowledge > 0 # initializes based on knowledge at start
         self.memory = {} # initialize empty memory dictionary
         self.cached_neighbors = None
-    
+
     def find_neighbors(self):
         if self.model.authority_density == 0:
-            # only compute once if authorities are not enabled
+            # only compute once if authorities are not enabled to avoid redundancy
             if self.cached_neighbors is None:
                 neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False)
                 self.cached_neighbors = neighbors
@@ -94,25 +94,23 @@ class Citizen(Agent): # define citizen class
             return len(behaved) # doesn't matter that this math doesn't math since the threshold will be bigger than 1
         
     def adjust_health_belief(self, peer_pressure):
+        # use peer pressure to influence benefits/barriers
         self.benefits += 0.1 * (peer_pressure - 0.5)  # boost if > 0.5
-        self.barriers -= 0.1 * (peer_pressure - 0.5)  # reduce if > 0.5
+        self.barriers -= 0.1 * (peer_pressure - 0.5)  # reduce if < 0.5
         self.benefits = max(-1, min(1, self.benefits)) # cap values
         self.barriers = max(-1, min(1, self.barriers)) # cap values
+        # use knowledge to influence susceptibility/severity
         self.susceptibility += 0.1 * self.knowledge
         self.severity += 0.1 * self.knowledge
         self.susceptibility = max(-1, min(1, self.susceptibility)) # cap values
         self.severity = max(-1, min(1, self.severity)) # cap values
+        # calculate the difference between the average of susc/severity and benefits/barriers 
         return (self.susceptibility + self.severity)/2 - (self.benefits + self.barriers)/2
     
-    def behave(self):
+    def behave(self): # change this so that all the steps happen in model?
         authorities, peers = self.find_neighbors()
         self.knowledge = self.adjust_knowledge(authorities, peers)
         peer_pressure = self.peer_pressure(peers)
         hb = self.adjust_health_belief(peer_pressure)
         # check if agent satisfies conditions for behavior
         self.behavior = hb > 0        
-        
-
-# Next steps: 
-# figure out a less redundant way to calculate neighbors (only once for peers but needs updating since authorities move)
-# check literature to see if there way better ways to model moderating features than with thresholds
